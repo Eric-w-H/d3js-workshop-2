@@ -1,9 +1,9 @@
 const dataFile = await d3.csv("./data/routes.csv");
 
-const colornone = "#ccc";
+const colornone = d3.color("#ccc");
 
 // define colors for airlines, you can expand this as needed, WN is Southwest, B6 is JetBlue
-const airlineColor = { WN: "orange", B6: "steelblue" };
+const airlineColor = { WN: d3.color("orange"), B6: d3.color("steelblue") };
 
 // create options from selector that allows us to view all airlines or filter by a specific airline
 const airlines = ["all", ...new Set(dataFile.map(d => d.Airline))];
@@ -74,7 +74,7 @@ function draw(airlineFilter) {
     };
 
     document.getElementById("chart").innerHTML = "";
-    document.getElementById("chart").appendChild(createChart(hierarchyData));
+    document.getElementById("chart").appendChild(createChart(hierarchyData, airlineFilter));
 }
 
 draw("all"); // initial draw
@@ -87,7 +87,7 @@ draw("all"); // initial draw
 // - on hover, highlight the hovered node and all directly connected nodes and links (incoming and outgoing)
 // - on unhover, return all nodes and links to their default state
 // update the tooltip to show the focus airport code and region, as well as number of incoming and outgoing routes
-function createChart(data) {
+function createChart(data, filter) {
   const width = 954;
   const radius = width / 2;
 
@@ -126,7 +126,8 @@ ${d.incoming.length} incoming`));
     .angle(d => d.x);
 
   const link = svg.append("g")
-      .attr("stroke", colornone)
+      .attr("stroke", filter === "all" ? colornone
+                    : airlineColor[filter].darker(1))
       .attr("fill", "none")
     .selectAll()
     .data(root.leaves().flatMap(leaf => leaf.outgoing))
@@ -138,10 +139,10 @@ ${d.incoming.length} incoming`));
   function overed(event, d) {
     link.style("mix-blend-mode", null);
     d3.select(this).attr("font-weight", "bold");
-    d3.selectAll(d.incoming.map(a => a.path)).attr("stroke", (a, i, elements) => airlineColor[a[2]]  ).raise();
-    d3.selectAll(d.incoming.map(([a]) => a.text)).attr("fill", (a, i, elements) => airlineColor[a[2]]).attr("font-weight", "bold");
-    d3.selectAll(d.outgoing.map(a => a.path)).attr("stroke", (a, i, elements) => airlineColor[a[2]]).raise();
-    d3.selectAll(d.outgoing.map(([, a]) => a.text)).attr("fill", (a, i, elements) => airlineColor[a[2]]).attr("font-weight", "bold");
+    d3.selectAll(d.incoming.map(a => a.path)).attr("stroke", (a, i, elements) => filter === "all" ? airlineColor[a[2]] : airlineColor[a[2]].brighter(1) ).raise();
+    d3.selectAll(d.incoming.map(([a]) => a.text)).attr("fill", colornone ).attr("font-weight", "bold");
+    d3.selectAll(d.outgoing.map(a => a.path)).attr("stroke", (a, i, elements) => filter === "all" ? airlineColor[a[2]] : airlineColor[a[2]].brighter(1) ).raise();
+    d3.selectAll(d.outgoing.map(([, a]) => a.text)).attr("fill", colornone ).attr("font-weight", "bold");
   }
 
   function outed(event, d) {
